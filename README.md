@@ -43,81 +43,83 @@ tests/Feature/          # Tests de funcionalidad
 
 ## Decisiones Técnicas Importantes
 
-### 1. **Patrón Action para Lógica de Negocio**
+### 1. Patrón Action para la Lógica de Negocio
 
-```php
-app/Actions/UpdateOrderStatusAction.php
-```
+Para mantener los controladores limpios y enfocados, decidí mover toda la lógica de negocio a acciones (`app/Actions`). Por ejemplo, `UpdateOrderStatusAction.php` se encarga únicamente de actualizar el estado de un pedido según el resultado del pago.  
 
-- Separa la lógica de negocio de los controladores
-- Facilita **testing unitario** y **reutilización**
-- Mantiene controladores delgados
+Esto me ayudó mucho a:  
 
----
+- Testear la lógica de forma aislada sin depender del controlador.  
+- Reutilizar la misma acción en distintos lugares si surgía la necesidad.  
+- Mantener los controladores delgados y más legibles.  
 
-### 2. **Enums con Casts en Modelos**
-
-```php
-protected $casts = [
-    'status' => \App\Enums\OrderStatus::class,
-];
-```
-
-- **Type Safety**: Evita errores con strings mágicos
-- **Auto-documentación**: `OrderStatus::PAID` es más claro que `'paid'`
-- **IDE Support**: Autocompletado y verificación
+Al principio fue un poco complicado separar todo correctamente y pasar los datos entre acciones, pero ahora el código es mucho más mantenible y fácil de entender.
 
 ---
 
-### 3. **Abstracción del Gateway de Pago**
+### 2. Enums con Casts en Modelos
 
-```php
-app/Services/PaymentGatewayService.php
-app/Services/FakePaymentGatewayService.php
-```
+Decidí usar Enums para los estados del pedido (`pending`, `paid`, `failed`) y castear automáticamente en el modelo.  
 
-- **Fácil cambio de proveedor**
-- **Mock para tests** con `Http::fake()`
-- **Manejo de errores de red** (timeout, 500)
+Ventajas que obtuve:  
 
----
+- Evito errores por “strings mágicos” en el código.  
+- El IDE ayuda con autocompletado y validaciones de tipo.  
+- Hace el código más legible y auto-documentado: `OrderStatus::PAID` es más claro que `'paid'`.  
 
-### 4. **Validación Avanzada en Form Request**
-
-```php
-app/Http/Requests/StorePaymentRequest.php
-```
-
-- Valida estado del pedido (`pending` o `failed`)
-- Bloquea pagos duplicados si ya está `paid`
-- **Rate limiting**: máximo 3 intentos fallidos en 5 minutos
+Actualizar todas las partes del código que antes usaban strings directos fue un reto, pero asegura consistencia en todo el proyecto.
 
 ---
 
-### 5. **Transacciones de Base de Datos**
+### 3. Abstracción del Gateway de Pago
 
-```php
-DB::transaction(function () {
-    $payment = Payment::create(...);
-    $this->updateOrderStatus->execute($order, OrderStatus::PAID);
-});
-```
+Para simular el procesamiento de pagos, creé un servicio de pagos (`PaymentGatewayService`) y una versión fake (`FakePaymentGatewayService`) para pruebas.  
 
-- Garantiza **consistencia** entre pago y estado del pedido
-- Evita estados corruptos en caso de error
+Esto me permitió:  
+
+- Cambiar de proveedor de pago sin tocar la lógica de negocio.  
+- Testear escenarios de éxito y fallo con `Http::fake()` sin depender de APIs externas.  
+- Manejar errores de red y timeouts de forma centralizada.  
+
+Al principio algunas pruebas fallaban de manera aleatoria si el endpoint real estaba lento, y la abstracción resolvió ese problema.
 
 ---
 
-### 6. **Gateway Simulado (Determinístico)**
+### 4. Validación Avanzada en Form Request
 
-Usamos: `https://fake-payment-gateway.free.beeceptor.com`
+En el `StorePaymentRequest` agregué reglas para:  
 
-| Monto | Endpoint | Resultado |
-|------|----------|----------|
-| **Entero (100.00)** | `/payment-success` | `approved` |
-| **Decimal (99.99)** | `/payment-failed` | `declined` |
+- Permitir pagos solo si el pedido está `pending` o `failed`.  
+- Bloquear intentos duplicados si el pedido ya está `paid`.  
+- Limitar los reintentos a 3 pagos fallidos en 5 minutos.  
 
-> Ideal para pruebas reproducibles sin dependencias externas.
+Esto fue un reto porque tuve que pensar en varios escenarios de fallo y reintento, pero ahora el sistema es más robusto y seguro.
+
+---
+
+### 5. Transacciones de Base de Datos
+
+Decidí envolver la creación de pagos y la actualización del estado del pedido en transacciones (`DB::transaction`).  
+
+- Garantiza que si algo falla al registrar un pago, el estado del pedido no quede inconsistente.  
+- Evita que queden pedidos “pagados parcialmente” o duplicados.  
+
+Al principio me costó identificar todos los puntos que debían estar dentro de la transacción, pero ahora tengo confianza en la consistencia de los datos.
+
+---
+
+### 6. Gateway Simulado (Determinístico)
+
+Para pruebas reproducibles sin depender de servicios externos, usé un gateway simulado en Beeceptor (`https://fake-payment-gateway.free.beeceptor.com`).  
+
+Configuré reglas claras:  
+
+| Monto            | Endpoint           | Resultado  |
+|-----------------|-----------------|-----------|
+| Entero (100.00)  | `/payment-success` | `approved` |
+| Decimal (99.99)  | `/payment-failed`  | `declined` |
+
+Esto me permitió probar todos los escenarios de pago de manera controlada. Antes de esto, las pruebas eran inestables porque los endpoints externos podían fallar o devolver datos inconsistentes.
 
 ---
 
@@ -265,17 +267,13 @@ GET /api/orders/stats
 
 ---
 
-## Consideraciones de Producción
+## Consideraciones futuras 
 
 | Aspecto | Implementado |
 |-------|--------------|
 | **Logging** | Errores de gateway, transacciones fallidas |
 | **Retry Logic** | Reintentos en `failed` |
-| **Rate Limiting** | 3 intentos fallidos en 5 min |
 | **Idempotencia** | Bloqueo con `Cache::lock()` |
-| **Validación** | Form Requests + limpieza de entrada |
-| **Seguridad** | Prevención de pagos duplicados |
-| **Monitoring** | `meta` con `timestamp`, `version`, `status_codes` |
 
 ---
 
