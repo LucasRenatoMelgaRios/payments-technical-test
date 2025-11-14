@@ -242,10 +242,57 @@ Devuelve colección con `payments`, `last_payment`, `payment_attempts`.
 ---
 
 ### 4. **Ver Pedido Específico**
+
 ```http
 GET /api/orders/1
 ```
 
+Endpoint para obtener todos los detalles de un pedido incluyendo su estado, intentos de pago y los pagos asociados.
+
+**Ejemplo de Respuesta (200)**:
+
+```json
+{
+  "data": {
+    "id": 12,
+    "customer_name": "Juan Pérez",
+    "amount": 99,
+    "status": "paid",
+    "status_label": "Pagado",
+    "payment_attempts": 1,
+    "created_at": "2025-11-14T03:31:41.000000Z",
+    "updated_at": "2025-11-14T05:16:26.000000Z",
+    "payments": [
+      {
+        "id": 21,
+        "order_id": 12,
+        "status": "success",
+        "status_label": "Exitoso",
+        "external_transaction_id": "txn_success_1234",
+        "external_message": "Payment processed successfully",
+        "created_at": "2025-11-14T05:16:26.000000Z",
+        "updated_at": "2025-11-14T05:16:26.000000Z",
+        "links": {
+          "order": "http://localhost:8000/api/orders/12"
+        }
+      }
+    ],
+    "links": {
+      "self": "http://localhost:8000/api/orders/12",
+      "payments": "http://localhost:8000/api/orders/12/payments"
+    }
+  },
+  "meta": {
+    "timestamp": "2025-11-14T05:35:49.909479Z",
+    "version": "1.0.0",
+    "status_codes": {
+      "pending": "Pendiente",
+      "paid": "Pagado",
+      "failed": "Fallido"
+    }
+  }
+}
+```
 ---
 
 ### 5. **Estadísticas**
