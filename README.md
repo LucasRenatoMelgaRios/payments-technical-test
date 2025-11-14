@@ -321,6 +321,63 @@ GET /api/orders/stats
 | **Idempotencia** | Bloqueo con `Cache::lock()` |
 
 ---
+ 
+## Tests de Funcionalidad
+
+La API incluye tests de funcionalidad (Feature Tests) que permiten validar el correcto funcionamiento de los endpoints y flujos principales del sistema de pedidos y pagos. Estos tests aseguran que la aplicación cumpla con los requisitos de negocio definidos y ayudan a prevenir errores al hacer cambios futuros.
+
+### Tipos de Tests Implementados
+
+1. **Creación de Pedidos (`CreateOrderTest`)**
+   - Verifica que un pedido se pueda crear correctamente con:
+     - Nombre del cliente
+     - Monto total
+     - Estado inicial `pending`
+   - Confirma que la respuesta devuelva la estructura esperada (`OrderResource`) y que el pedido quede registrado en la base de datos.
+
+2. **Procesamiento de Pagos (`ProcessPaymentTest`)**
+   - Simula pagos a través de un gateway externo mockeado.
+   - Casos testeados:
+     - Pago exitoso: el pedido cambia a estado `paid`.
+     - Pago fallido: el pedido cambia a estado `failed`.
+     - Reintentos de pago para pedidos fallidos.
+   - Verifica que se registren los pagos asociados al pedido y se actualicen correctamente los contadores de intentos.
+
+3. **Listar Pedidos y Ver Pedido Específico**
+   - Comprueba que los endpoints `GET /api/orders` y `GET /api/orders/{id}` devuelvan:
+     - Estado actual del pedido
+     - Número de intentos de pago
+     - Pagos asociados
+   - Garantiza que los datos se estructuren correctamente en la respuesta (`OrderResource` y `PaymentResource`).
+
+### Ejecución de Tests
+
+Para correr todos los tests:
+
+```bash
+php artisan test
+```
+
+Para ejecutar un test específico:
+
+```bash
+php artisan test tests/Feature/CreateOrderTest.php
+php artisan test tests/Feature/ProcessPaymentTest.php
+```
+
+Para ver cobertura de código:
+
+```bash
+php artisan test --coverage
+```
+
+### Beneficios de los Tests
+
+* Aseguran que la lógica de negocio funciona correctamente.
+* Previenen regresiones al hacer cambios en la API.
+* Permiten simular escenarios de pago exitosos y fallidos sin depender de un gateway real.
+* Validan la integridad de datos entre pedidos y pagos.
+
 
 ## Autor
 
