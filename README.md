@@ -1,17 +1,3 @@
-¡Perfecto! Aquí tienes un **`README.md` profesional, completo y listo para entregar**, que cumple **al 100% con los requisitos de la prueba técnica**, incluyendo:
-
-- Estructura del proyecto (con imagen referenciada)  
-- Decisiones técnicas clave  
-- Instalación paso a paso  
-- Ejecución de tests  
-- Endpoints con ejemplos  
-- Flujo de estados  
-- Gateway simulado explicado  
-- Consideraciones de producción  
-
----
-
-```markdown
 # API de Gestión de Pedidos y Pagos
 
 Una **API REST** construida con **Laravel 12** para gestionar pedidos y procesar pagos mediante integración con un **gateway externo simulado**.
@@ -52,9 +38,6 @@ database/
 routes/api.php          # Rutas API
 tests/Feature/          # Tests de funcionalidad
 ```
-
-> **Estructura visual del proyecto**  
-> ![Estructura del proyecto](project-structure.png)
 
 ---
 
@@ -282,8 +265,6 @@ GET /api/orders/stats
 
 ---
 
----
-
 ## Consideraciones de Producción
 
 | Aspecto | Implementado |
@@ -304,5 +285,4 @@ GET /api/orders/stats
 [lucasmelgar123@gmail.com] 
 
 > **Entrega lista para producción y evaluación técnica**
-```
 
