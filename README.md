@@ -172,8 +172,6 @@ php artisan test
 php artisan test tests/Feature/CreateOrderTest.php
 php artisan test tests/Feature/ProcessPaymentTest.php
 
-# Con cobertura
-php artisan test --coverage --min=90
 ```
 
 > **Resultado esperado**:
